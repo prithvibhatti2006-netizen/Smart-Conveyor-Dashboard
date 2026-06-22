@@ -3,364 +3,376 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Conveyor OS</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <title>SCADA HMI | Smart Conveyor System</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg-base: #0f172a;
-      --bg-surface: #1e293b;
-      --bg-surface-hover: #334155;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --metal: #ef4444; 
-      --plastic: #10b981; 
-      --accent: #3b82f6;
-      --border: rgba(255, 255, 255, 0.1);
-      --sidebar-width: 250px;
+      --bg: #0a0a0a;
+      --panel: #1a1a1a;
+      --border: #333;
+      --text: #e0e0e0;
+      --accent: #00ffcc;
+      --warning: #ffcc00;
+      --danger: #ff3333;
+      --metal: #a0aec0;
+      --plastic: #f59e0b;
+      font-family: 'Consolas', 'Courier New', monospace;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body { background-color: var(--bg-base); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+    body { background-color: var(--bg); color: var(--text); height: 100vh; display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
 
-    /* Layout & Sidebar */
-    .sidebar { width: var(--sidebar-width); background-color: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-    .sidebar-header { padding: 2rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border); }
-    .sidebar-header h1 { font-size: 1.5rem; font-weight: 700; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; color: transparent; }
+    /* Top Header */
+    header { background-color: #000; border-bottom: 2px solid var(--border); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .logo-area h1 { font-size: 1.2rem; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
+    .sys-clock { color: #888; font-size: 0.9rem; }
+
+    /* Main Grid */
+    main { display: grid; grid-template-columns: 300px 1fr 350px; gap: 2px; background-color: var(--border); }
+    .panel { background-color: var(--panel); padding: 15px; display: flex; flex-direction: column; overflow-y: auto; }
     
-    .nav-links { list-style: none; padding: 1rem 0; flex-grow: 1; }
-    .nav-item { padding: 1rem 1.5rem; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-muted); transition: 0.2s; border-left: 3px solid transparent; }
-    .nav-item:hover { background-color: rgba(255,255,255,0.05); color: var(--text-main); }
-    .nav-item.active { background-color: rgba(59, 130, 246, 0.1); color: var(--accent); border-left-color: var(--accent); }
+    h2 { font-size: 1rem; text-transform: uppercase; color: #888; border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-bottom: 15px; }
 
-    .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; background-color: var(--bg-base); }
-    .topbar { height: 70px; background-color: var(--bg-surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    /* Telemetry Data */
+    .data-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; }
+    .data-val { font-weight: bold; color: var(--accent); }
     
-    .view-section { display: none; padding: 2rem; animation: fadeIn 0.3s ease-out; }
-    .view-section.active { display: block; }
-
-    /* Dashboard Widgets */
-    .widget-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-    .widget { background: var(--bg-surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); }
-    .widget-title { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
-    .widget-value { font-size: 2.5rem; font-weight: 700; }
-    .text-metal { color: var(--metal); }
-    .text-plastic { color: var(--plastic); }
-
-    /* Live Conveyor Simulation */
-    .sim-container { background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border); padding: 2rem; position: relative; height: 350px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
-    .belt { height: 20px; background: repeating-linear-gradient(90deg, #334155, #334155 20px, #475569 20px, #475569 40px); width: 100%; border-radius: 4px; position: absolute; top: 50%; animation: beltMove 2s linear infinite; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-    .sensor-gate { position: absolute; top: 20%; left: 50%; height: 60%; width: 60px; border: 2px dashed var(--accent); border-radius: 8px; background: rgba(59, 130, 246, 0.1); display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; color: var(--accent); font-weight: bold; }
-    
-    .item { position: absolute; top: 43%; width: 40px; height: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.1s linear; z-index: 10; display: flex; justify-content: center; align-items: center; font-size: 1.2rem;}
-    .item.metal { background: linear-gradient(135deg, #ef4444, #991b1b); }
-    .item.plastic { background: linear-gradient(135deg, #10b981, #047857); border-radius: 50%; }
-
-    /* Sorting Bins */
-    .bins-container { position: absolute; bottom: 10%; right: 5%; display: flex; gap: 20px; }
-    .bin { width: 100px; height: 60px; border-radius: 8px; border: 2px solid; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 5px; font-weight: bold; }
-    .bin-metal { border-color: var(--metal); background: rgba(239, 68, 68, 0.1); color: var(--metal); }
-    .bin-plastic { border-color: var(--plastic); background: rgba(16, 185, 129, 0.1); color: var(--plastic); }
-
     /* Controls */
-    .controls-bar { margin-top: 1.5rem; display: flex; gap: 1rem; }
-    button { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-primary:hover { background: #2563eb; }
-    .btn-danger { background: rgba(239, 68, 68, 0.2); color: var(--metal); border: 1px solid var(--metal); }
-    .btn-danger:hover { background: var(--metal); color: white; }
+    .control-group { margin-top: 20px; }
+    label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 5px; }
+    input[type=range] { width: 100%; margin-bottom: 15px; accent-color: var(--accent); }
+    
+    button { width: 100%; padding: 10px; font-family: inherit; font-weight: bold; text-transform: uppercase; cursor: pointer; border: none; margin-bottom: 10px; transition: 0.2s; }
+    .btn-sys { background-color: #333; color: white; }
+    .btn-sys:hover { background-color: #444; }
+    .btn-estop { background-color: #500; color: var(--danger); border: 1px solid var(--danger); }
+    .btn-estop:hover { background-color: var(--danger); color: white; }
 
-    /* Data Table */
-    .table-container { background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    th { background: rgba(255,255,255,0.02); padding: 1rem; color: var(--text-muted); cursor: pointer; user-select: none; border-bottom: 1px solid var(--border); }
-    th:hover { background: rgba(255,255,255,0.05); }
-    td { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.02); }
-    tr:hover td { background: rgba(255,255,255,0.02); }
-    .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-    .badge.metal { background: rgba(239, 68, 68, 0.2); color: var(--metal); }
-    .badge.plastic { background: rgba(16, 185, 129, 0.2); color: var(--plastic); }
+    /* Canvas Area */
+    .canvas-container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background-color: #111; }
+    canvas { background-color: #1a1a1a; border: 1px solid #333; box-shadow: inset 0 0 50px rgba(0,0,0,0.8); }
 
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes beltMove { from { background-position: 0 0; } to { background-position: -40px 0; } }
-    @keyframes dropInBin { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.5) translateY(50px); opacity: 0; } }
+    /* Charts Area */
+    .chart-container { height: 200px; margin-bottom: 20px; width: 100%; }
+    
+    /* Log Table */
+    .log-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; margin-top: 10px; }
+    .log-table th, .log-table td { text-align: left; padding: 5px; border-bottom: 1px solid #333; }
+    .log-table th { color: #888; }
   </style>
 </head>
 <body>
 
-  <nav class="sidebar">
-    <div class="sidebar-header">
-      <h1>Conveyor OS</h1>
+  <header>
+    <div class="logo-area">
+      <h1>HMI // Conveyor Diagnostics SCADA</h1>
     </div>
-    <ul class="nav-links">
-      <li class="nav-item active" data-target="dashboard"><i class="fas fa-chart-line"></i> Dashboard</li>
-      <li class="nav-item" data-target="visualizer"><i class="fas fa-cogs"></i> Live Visualizer</li>
-      <li class="nav-item" data-target="datalogs"><i class="fas fa-database"></i> Data Logs</li>
-    </ul>
-  </nav>
+    <div class="sys-clock" id="clock">00:00:00:000</div>
+  </header>
 
-  <main class="main-content">
-    <header class="topbar">
-      <div id="systemStatus" style="color: var(--plastic); font-weight: 600;"><i class="fas fa-check-circle"></i> System Online</div>
-      <button class="btn-primary" id="autoSimBtn" onclick="toggleSim()"><i class="fas fa-play"></i> Start Auto-Run</button>
-    </header>
-
-    <section class="view-section active" id="dashboard">
-      <h2 style="margin-bottom: 1.5rem;">System Overview</h2>
-      <div class="widget-grid">
-        <div class="widget">
-          <div class="widget-title">Total Processed</div>
-          <div class="widget-value" id="dashTotal">0</div>
-        </div>
-        <div class="widget">
-          <div class="widget-title">Metal Yield</div>
-          <div class="widget-value text-metal" id="dashMetal">0</div>
-        </div>
-        <div class="widget">
-          <div class="widget-title">Plastic Yield</div>
-          <div class="widget-value text-plastic" id="dashPlastic">0</div>
-        </div>
-        <div class="widget">
-          <div class="widget-title">Efficiency Rate</div>
-          <div class="widget-value" id="dashEff" style="color: var(--accent)">100%</div>
-        </div>
+  <main>
+    <div class="panel">
+      <h2>VFD Motor Control</h2>
+      <div class="data-row"><span>Belt Velocity (v):</span> <span class="data-val" id="valVel">1.50 m/s</span></div>
+      <div class="data-row"><span>Motor Drive:</span> <span class="data-val" id="valRpm">1450 RPM</span></div>
+      <div class="data-row"><span>Load Torque:</span> <span class="data-val" id="valTorque">12.4 Nm</span></div>
+      
+      <div class="control-group">
+        <label>Set Frequency (Hz) / Belt Speed</label>
+        <input type="range" id="speedSlider" min="0.5" max="3" step="0.1" value="1.5">
       </div>
-    </section>
 
-    <section class="view-section" id="visualizer">
-      <h2 style="margin-bottom: 1.5rem;">Real-time Sorting Simulation</h2>
-      <div class="sim-container" id="simArea">
-        <div class="belt"></div>
-        <div class="sensor-gate">Sensor</div>
-        <div class="bins-container">
-          <div class="bin bin-metal">METAL</div>
-          <div class="bin bin-plastic">PLASTIC</div>
-        </div>
-      </div>
-      <div class="controls-bar">
-        <button class="btn-primary" style="background: var(--metal);" onclick="spawnItem('metal')">Spawn Metal</button>
-        <button class="btn-primary" style="background: var(--plastic);" onclick="spawnItem('plastic')">Spawn Plastic</button>
-        <button class="btn-danger" onclick="clearBelt()">Emergency Stop</button>
-      </div>
-    </section>
+      <h2 style="margin-top: 20px;">Kinematics Logic</h2>
+      <div class="data-row"><span>Sensor Pos (x1):</span> <span class="data-val">200 mm</span></div>
+      <div class="data-row"><span>Pneumatic Pos (x2):</span> <span class="data-val">600 mm</span></div>
+      <div class="data-row"><span>Distance (d):</span> <span class="data-val">400 mm</span></div>
+      <div class="data-row" style="color: var(--warning)"><span>Est. Delay (t = d/v):</span> <span class="data-val" id="valDelay">266 ms</span></div>
 
-    <section class="view-section" id="datalogs">
-      <h2 style="margin-bottom: 1.5rem;">Sensor History</h2>
-      <div class="table-container">
-        <table>
+      <div class="control-group" style="margin-top: auto;">
+        <button class="btn-sys" id="btnSpawn">Feed Material Profile</button>
+        <button class="btn-estop" id="btnEstop">EMERGENCY STOP (E-STOP)</button>
+      </div>
+    </div>
+
+    <div class="panel" style="padding: 0; position: relative;">
+      <div class="canvas-container">
+        <canvas id="simCanvas" width="800" height="400"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Inductive Sensor (Analog 0-10V)</h2>
+      <div class="chart-container">
+        <canvas id="sensorChart"></canvas>
+      </div>
+
+      <h2>PLC Routing History</h2>
+      <div style="overflow-y: auto; height: 100%;">
+        <table class="log-table">
           <thead>
             <tr>
-              <th onclick="sortLogs('id')">ID <i class="fas fa-sort"></i></th>
-              <th onclick="sortLogs('time')">Timestamp <i class="fas fa-sort"></i></th>
-              <th onclick="sortLogs('type')">Material Type <i class="fas fa-sort"></i></th>
-              <th onclick="sortLogs('status')">Routing Status <i class="fas fa-sort"></i></th>
+              <th>Time</th>
+              <th>Material</th>
+              <th>Actuator</th>
             </tr>
           </thead>
-          <tbody id="logTableBody">
+          <tbody id="logBody">
             </tbody>
         </table>
       </div>
-    </section>
-
+    </div>
   </main>
 
   <script>
-    /* =========================================
-       1. STATE MANAGEMENT & DATA
-    ========================================= */
-    const state = {
-      metal: 0,
-      plastic: 0,
-      total: 0,
-      isRunning: false,
-      simInterval: null,
-      logs: [],
-      currentSortConfig: { key: 'id', direction: -1 } // -1 for descending
+    /* =======================================================
+       1. SYSTEM VARIABLES & PHYSICS STATE
+    ======================================================= */
+    let sysState = {
+      running: true,
+      beltSpeed: 1.5, // m/s (simulated as px/frame logic)
+      time: 0,
+      sensorVoltage: 0.2 // Base noise
     };
 
-    let nextId = 1;
-    let itemsOnBelt = []; // Tracks DOM elements moving on the belt
+    const SENSOR_X = 200;
+    const PUSHER_X = 600;
+    const items = [];
+    
+    // Actuator State
+    const pusher = {
+      extending: false,
+      extension: 0,
+      maxExtension: 120 // pixels
+    };
 
-    /* =========================================
-       2. ROUTING (SPA LOGIC)
-    ========================================= */
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        // Update Nav UI
-        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-        item.classList.add('active');
+    /* =======================================================
+       2. UI & CONTROL BINDINGS
+    ======================================================= */
+    const speedSlider = document.getElementById('speedSlider');
+    const btnSpawn = document.getElementById('btnSpawn');
+    const btnEstop = document.getElementById('btnEstop');
 
-        // Switch Sections
-        const targetId = item.getAttribute('data-target');
-        document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
-        document.getElementById(targetId).classList.add('active');
+    speedSlider.addEventListener('input', (e) => {
+      sysState.beltSpeed = parseFloat(e.target.value);
+      document.getElementById('valVel').innerText = sysState.beltSpeed.toFixed(2) + " m/s";
+      document.getElementById('valRpm').innerText = Math.round(sysState.beltSpeed * 966) + " RPM";
+      
+      // Calculate kinematic delay: t = d/v 
+      // (Using arbitrary scale mapping for visual correlation)
+      const dist = PUSHER_X - SENSOR_X;
+      const delayMs = (dist / (sysState.beltSpeed * 100)) * 100;
+      document.getElementById('valDelay').innerText = Math.round(delayMs) + " ms";
+    });
+
+    btnSpawn.addEventListener('click', () => {
+      if(!sysState.running) return;
+      // Spawn random material
+      const type = Math.random() > 0.5 ? 'metal' : 'plastic';
+      items.push({
+        x: -50,
+        y: 175,
+        w: 50,
+        h: 50,
+        type: type,
+        scanned: false,
+        rejected: false,
+        rejectY: 0
       });
     });
 
-    /* =========================================
-       3. SIMULATION ENGINE
-    ========================================= */
-    function toggleSim() {
-      const btn = document.getElementById('autoSimBtn');
-      if (state.isRunning) {
-        clearInterval(state.simInterval);
-        state.isRunning = false;
-        btn.innerHTML = '<i class="fas fa-play"></i> Start Auto-Run';
-        btn.classList.remove('btn-danger');
-      } else {
-        state.isRunning = true;
-        btn.innerHTML = '<i class="fas fa-pause"></i> Pause System';
-        btn.classList.add('btn-danger');
-        
-        // Spawn an item randomly every 1.5 to 3 seconds
-        state.simInterval = setInterval(() => {
-          const type = Math.random() > 0.6 ? 'metal' : 'plastic';
-          spawnItem(type);
-        }, Math.random() * 1500 + 1500);
+    btnEstop.addEventListener('click', () => {
+      sysState.running = !sysState.running;
+      btnEstop.innerText = sysState.running ? "EMERGENCY STOP (E-STOP)" : "SYSTEM HALTED - RESET E-STOP";
+      btnEstop.style.backgroundColor = sysState.running ? "#500" : var(--danger);
+      btnEstop.style.color = sysState.running ? var(--danger) : "white";
+    });
+
+    /* =======================================================
+       3. SENSOR SIGNAL CHARTING (Chart.js)
+    ======================================================= */
+    const ctxChart = document.getElementById('sensorChart').getContext('2d');
+    const chartData = new Array(50).fill(0.2);
+    
+    const sensorChart = new Chart(ctxChart, {
+      type: 'line',
+      data: {
+        labels: new Array(50).fill(''),
+        datasets: [{
+          label: 'Voltage (V)',
+          data: chartData,
+          borderColor: '#00ffcc',
+          backgroundColor: 'rgba(0, 255, 204, 0.1)',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        scales: {
+          y: { min: 0, max: 10, grid: { color: '#333' }, ticks: { color: '#888' } },
+          x: { display: false }
+        },
+        plugins: { legend: { display: false } }
       }
-    }
+    });
 
-    function spawnItem(type) {
-      const simArea = document.getElementById('simArea');
-      const itemEl = document.createElement('div');
+    /* =======================================================
+       4. CANVAS RENDERER & KINEMATICS ENGINE
+    ======================================================= */
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function drawSystem() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Belt (Top Down)
+      ctx.fillStyle = '#222';
+      ctx.fillRect(0, 150, canvas.width, 100);
       
-      itemEl.className = `item ${type}`;
-      itemEl.innerHTML = type === 'metal' ? '<i class="fas fa-cube"></i>' : '<i class="fas fa-circle"></i>';
-      itemEl.style.left = '-50px'; // Start off-screen
-      
-      simArea.appendChild(itemEl);
+      // Belt texture animation
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 2;
+      let offset = (sysState.time * sysState.beltSpeed * 2) % 40;
+      for(let i = -40; i < canvas.width; i+=40) {
+        ctx.beginPath();
+        ctx.moveTo(i + offset, 150);
+        ctx.lineTo(i + offset, 250);
+        ctx.stroke();
+      }
 
-      // Animation Engine Tracking
-      itemsOnBelt.push({
-        element: itemEl,
-        xPos: -50,
-        type: type,
-        scanned: false
-      });
-    }
+      // Draw Sensor Bridge (Inductive Prox)
+      ctx.fillStyle = 'rgba(0, 255, 204, 0.1)';
+      ctx.fillRect(SENSOR_X - 10, 140, 20, 120);
+      ctx.strokeStyle = '#00ffcc';
+      ctx.strokeRect(SENSOR_X - 10, 140, 20, 120);
+      ctx.fillStyle = '#00ffcc';
+      ctx.font = '12px Consolas';
+      ctx.fillText("INDUCTIVE PROX", SENSOR_X - 40, 130);
 
-    // Main Game/Animation Loop
-    function animateBelt() {
-      const beltSpeed = 3;
-      const simAreaWidth = document.getElementById('simArea').offsetWidth;
-      const sensorX = simAreaWidth * 0.5; // Sensor is at 50%
-      const dropZoneX = simAreaWidth - 150; 
+      // Draw Pneumatic Actuator (Top Down)
+      ctx.fillStyle = '#444';
+      ctx.fillRect(PUSHER_X, 260, 40, 60); // Cylinder body
+      ctx.fillStyle = '#ffcc00';
+      ctx.fillRect(PUSHER_X + 10, 250 - pusher.extension, 20, pusher.extension); // Rod extending up across belt
+      ctx.fillStyle = '#ccc';
+      ctx.fillRect(PUSHER_X, 250 - pusher.extension, 40, 10); // Pusher head
+      ctx.fillText("PNEUMATIC ACTUATOR", PUSHER_X - 30, 340);
 
-      for (let i = itemsOnBelt.length - 1; i >= 0; i--) {
-        let item = itemsOnBelt[i];
-        item.xPos += beltSpeed;
-        item.element.style.transform = `translateX(${item.xPos}px)`;
+      // Draw Reject Bin
+      ctx.strokeStyle = '#ff3333';
+      ctx.strokeRect(PUSHER_X - 20, 10, 80, 100);
+      ctx.fillStyle = '#ff3333';
+      ctx.fillText("METAL REJECT BIN", PUSHER_X - 20, 130);
 
-        // Sensor Detection
-        if (!item.scanned && item.xPos > sensorX) {
+      // Draw Items
+      let voltageRead = 0.2 + (Math.random() * 0.3); // Base noise
+
+      for(let i = items.length - 1; i >= 0; i--) {
+        let item = items[i];
+
+        // Kinematics: Update position based on belt speed
+        if(sysState.running) {
+          if(!item.rejected) {
+            item.x += sysState.beltSpeed * 2; 
+          } else {
+            // Being pushed by pneumatic cylinder
+            item.y -= 5; 
+            item.x += sysState.beltSpeed * 0.5; // Slight forward momentum while being pushed
+          }
+        }
+
+        // Sensor Logic
+        if(item.x > SENSOR_X - 25 && item.x < SENSOR_X + 25) {
+          if(item.type === 'metal') {
+            voltageRead = 8.5 + (Math.random() * 1.5); // 8.5V to 10V signal for metal
+            if(!item.scanned) logEvent("Fe-Detect", "Active High");
+          } else {
+            voltageRead = 1.0 + (Math.random() * 0.5); // Minimal blip for plastic
+            if(!item.scanned) logEvent("Poly-Detect", "Ignore");
+          }
           item.scanned = true;
-          logDetection(item.type);
-          
-          // Flash sensor gate
-          const gate = document.querySelector('.sensor-gate');
-          gate.style.backgroundColor = item.type === 'metal' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)';
-          setTimeout(() => gate.style.backgroundColor = 'rgba(59, 130, 246, 0.1)', 300);
         }
 
-        // Sorting / Dropping off the end
-        if (item.xPos > dropZoneX) {
-          item.element.style.animation = 'dropInBin 0.5s forwards';
-          itemsOnBelt.splice(i, 1); // Remove from tracking array
-          
-          // Clean up DOM after animation
-          setTimeout(() => {
-            if(item.element.parentNode) item.element.parentNode.removeChild(item.element);
-          }, 500);
+        // Actuator Logic (PLC Trigger)
+        if(item.type === 'metal' && item.scanned && item.x >= PUSHER_X && item.x <= PUSHER_X + 10 && !item.rejected) {
+          item.rejected = true;
+          pusher.extending = true;
+        }
+
+        // Draw Item
+        ctx.fillStyle = item.type === 'metal' ? '#a0aec0' : '#f59e0b';
+        ctx.fillRect(item.x, item.y, item.w, item.h);
+        ctx.strokeStyle = '#000';
+        ctx.strokeRect(item.x, item.y, item.w, item.h);
+
+        // Cleanup offscreen items
+        if(item.x > canvas.width || item.y < 0) {
+          items.splice(i, 1);
         }
       }
-      requestAnimationFrame(animateBelt);
-    }
-    requestAnimationFrame(animateBelt); // Start animation loop
 
-    function clearBelt() {
-      itemsOnBelt.forEach(item => {
-        if(item.element.parentNode) item.element.parentNode.removeChild(item.element);
-      });
-      itemsOnBelt = [];
-    }
-
-    /* =========================================
-       4. DATA & DASHBOARD UPDATES
-    ========================================= */
-    function logDetection(type) {
-      state[type]++;
-      state.total++;
-      
-      // Update Dashboard
-      document.getElementById('dashTotal').innerText = state.total;
-      document.getElementById('dashMetal').innerText = state.metal;
-      document.getElementById('dashPlastic').innerText = state.plastic;
-      
-      // Calculate fake efficiency (just for dashboard visual)
-      const eff = Math.max(90, 100 - (state.total % 5));
-      document.getElementById('dashEff').innerText = eff + "%";
-
-      // Add to Log Array
-      const newLog = {
-        id: nextId++,
-        time: new Date(),
-        type: type,
-        status: type === 'metal' ? 'Routed to Bin A' : 'Routed to Bin B'
-      };
-      
-      state.logs.push(newLog);
-      renderTable();
-    }
-
-    /* =========================================
-       5. DATA TABLE & SORTING
-    ========================================= */
-    function sortLogs(key) {
-      // Toggle direction if clicking the same column
-      if (state.currentSortConfig.key === key) {
-        state.currentSortConfig.direction *= -1;
-      } else {
-        state.currentSortConfig.key = key;
-        state.currentSortConfig.direction = 1;
+      // Handle Actuator Animation
+      if(pusher.extending) {
+        pusher.extension += 15;
+        if(pusher.extension >= pusher.maxExtension) {
+          pusher.extending = false;
+        }
+      } else if (pusher.extension > 0) {
+        pusher.extension -= 10; // Retract
       }
 
-      state.logs.sort((a, b) => {
-        let valA = a[key];
-        let valB = b[key];
-        
-        if (valA < valB) return -1 * state.currentSortConfig.direction;
-        if (valA > valB) return 1 * state.currentSortConfig.direction;
-        return 0;
-      });
-
-      renderTable();
+      // Update Chart
+      sysState.sensorVoltage = voltageRead;
     }
 
-    function renderTable() {
-      const tbody = document.getElementById('logTableBody');
-      tbody.innerHTML = ''; // Clear current table
-
-      // Render only last 50 to prevent DOM lag
-      const displayLogs = state.logs.slice(-50);
-
-      displayLogs.forEach(log => {
-        const tr = document.createElement('tr');
-        
-        const timeString = log.time.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' });
-        const typeBadge = `<span class="badge ${log.type}">${log.type.toUpperCase()}</span>`;
-
-        tr.innerHTML = `
-          <td>#${log.id.toString().padStart(4, '0')}</td>
-          <td style="color: var(--text-muted)">${timeString}</td>
-          <td>${typeBadge}</td>
-          <td><i class="fas fa-check" style="color: var(--plastic); margin-right: 5px;"></i> ${log.status}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+    /* =======================================================
+       5. MAIN LOOP & UTILS
+    ======================================================= */
+    function logEvent(material, action) {
+      const tbody = document.getElementById('logBody');
+      const tr = document.createElement('tr');
+      const now = new Date();
+      tr.innerHTML = `
+        <td style="color:#888">${now.toLocaleTimeString()}:${now.getMilliseconds()}</td>
+        <td style="color:${material === 'Fe-Detect' ? 'var(--metal)' : 'var(--plastic)'}">${material}</td>
+        <td style="color:${action === 'Active High' ? 'var(--danger)' : '#666'}">${action}</td>
+      `;
+      tbody.prepend(tr);
+      if(tbody.children.length > 20) tbody.removeChild(tbody.lastChild);
     }
 
-    // Initialize an empty table on load
-    renderTable();
+    function loop() {
+      if(sysState.running) sysState.time++;
+      
+      // Render Canvas
+      drawSystem();
+
+      // Update Chart Array (Throttle to reduce visual noise)
+      if(sysState.time % 2 === 0 && sysState.running) {
+        chartData.push(sysState.sensorVoltage);
+        chartData.shift();
+        sensorChart.update();
+      }
+
+      // Update System Clock UI
+      const d = new Date();
+      document.getElementById('clock').innerText = `${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}:${d.getMilliseconds()}`;
+
+      requestAnimationFrame(loop);
+    }
+
+    // Auto-feed material periodically
+    setInterval(() => {
+      if(sysState.running && items.length < 3) btnSpawn.click();
+    }, 3000);
+
+    // Start Simulation
+    requestAnimationFrame(loop);
   </script>
 </body>
 </html>
