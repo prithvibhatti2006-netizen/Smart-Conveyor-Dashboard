@@ -1,0 +1,835 @@
+/* ==========================================================================
+   RVCE MECH 4TH SEMESTER PROJECT - SMART CONVEYOR HMI & SIMULATOR
+   DESIGN: Neutral Industrial Slate-Blue SCADA Interface
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  /* Color Palette */
+  --bg-color: #0b0f19;         /* Deep Slate Blue-Black */
+  --panel-bg: #121824;         /* Dark Card Slate */
+  --panel-border: #1e293b;     /* Deep Steel Blue Border */
+  --text-primary: #f8fafc;     /* Bright Off-White */
+  --text-secondary: #94a3b8;   /* Muted Grey */
+  --text-dark: #475569;        /* Darker grey for details */
+  
+  /* System Accents */
+  --accent-cyan: #00f0ff;      /* System Active / Normal Status */
+  --accent-green: #10b981;     /* Running / Pass Status */
+  --accent-amber: #f59e0b;     /* Plastic / Warning State */
+  --accent-red: #f43f5e;       /* Metal / E-Stop Active State */
+  --rvce-blue: #1d4ed8;        /* RVCE Corporate Blue */
+  --rvce-gold: #eab308;        /* RVCE Gold Accent */
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'Share Tech Mono', 'Consolas', 'Courier New', monospace;
+}
+
+/* Base resets & layout */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Custom Scrollbar for SCADA panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--panel-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dark);
+}
+
+/* ==========================================================================
+   HEADER SECTION
+   ========================================================================== */
+header {
+  background-color: #080b12;
+  border-bottom: 2px solid var(--panel-border);
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+/* RVCE Color Bar Accent */
+header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--rvce-blue) 0%, var(--rvce-blue) 60%, var(--rvce-gold) 60%, var(--rvce-gold) 100%);
+}
+
+.header-title-group h1 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-title-group h1 span.subtitle {
+  font-size: 0.8rem;
+  color: var(--rvce-gold);
+  font-weight: 400;
+  border-left: 1px solid var(--text-dark);
+  padding-left: 10px;
+  font-family: var(--font-mono);
+}
+
+.header-title-group p {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.system-status-pills {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.status-pill {
+  background-color: rgba(30, 41, 59, 0.5);
+  border: 1px solid var(--panel-border);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-pill .indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-dark);
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.status-pill.active-green .indicator {
+  background-color: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+}
+
+.status-pill.active-cyan .indicator {
+  background-color: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan);
+}
+
+.status-pill.active-red .indicator {
+  background-color: var(--accent-red);
+  box-shadow: 0 0 8px var(--accent-red);
+}
+
+.sys-clock {
+  font-family: var(--font-mono);
+  color: var(--accent-cyan);
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+}
+
+/* ==========================================================================
+   MAIN DASHBOARD GRID
+   ========================================================================== */
+main {
+  display: grid;
+  grid-template-columns: 320px 1fr 360px;
+  flex: 1;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--bg-color);
+  overflow: hidden;
+}
+
+.panel {
+  background-color: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.panel-header {
+  border-bottom: 1px solid var(--panel-border);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-header h2::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 12px;
+  background-color: var(--rvce-gold);
+}
+
+/* ==========================================================================
+   TELEMETRY & KINEMATICS DATA DISPLAY
+   ========================================================================== */
+.data-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(15, 23, 42, 0.4);
+  padding: 8px 12px;
+  border-radius: 4px;
+  border-left: 2px solid var(--panel-border);
+}
+
+.data-row.highlight-cyan {
+  border-left-color: var(--accent-cyan);
+}
+
+.data-row.highlight-amber {
+  border-left-color: var(--accent-amber);
+}
+
+.data-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.data-value {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.data-value.cyan { color: var(--accent-cyan); }
+.data-value.green { color: var(--accent-green); }
+.data-value.amber { color: var(--accent-amber); }
+.data-value.red { color: var(--accent-red); }
+
+/* ==========================================================================
+   CONTROLS & SLIDERS
+   ========================================================================== */
+.control-section {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.control-label-group {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.control-label-value {
+  font-family: var(--font-mono);
+  color: var(--accent-cyan);
+  font-weight: bold;
+}
+
+/* Custom HMI slider */
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  background: transparent;
+}
+
+input[type=range]:focus {
+  outline: none;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px;
+  cursor: pointer;
+  background: #1e293b;
+  border-radius: 3px;
+  border: 1px solid #334155;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  height: 20px;
+  width: 12px;
+  border-radius: 2px;
+  background: var(--accent-cyan);
+  cursor: pointer;
+  -webkit-appearance: none;
+  margin-top: -8px;
+  border: 1px solid #00c8d8;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+}
+
+input[type=range]:active::-webkit-slider-thumb {
+  background: var(--text-primary);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
+}
+
+/* Action Buttons */
+.btn-container {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+button.btn-hmi {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid var(--panel-border);
+  background-color: #1e293b;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+button.btn-hmi:hover:not(:disabled) {
+  background-color: #2d3748;
+  border-color: var(--text-dark);
+}
+
+button.btn-hmi:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button.btn-hmi:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.btn-hmi.accent {
+  background-color: rgba(0, 240, 255, 0.1);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+button.btn-hmi.accent:hover:not(:disabled) {
+  background-color: var(--accent-cyan);
+  color: var(--bg-color);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+/* EMERGENCY STOP BUTTON (Industrial SCADA Design) */
+.estop-container {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: rgba(244, 63, 94, 0.05);
+  border: 1px dashed rgba(244, 63, 94, 0.3);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.btn-estop {
+  width: 100%;
+  height: 48px;
+  border-radius: 6px;
+  border: 2px solid var(--accent-red);
+  background: linear-gradient(180deg, #991b1b 0%, #7f1d1d 100%);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-estop::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-estop:hover {
+  background: linear-gradient(180deg, #b91c1c 0%, #991b1b 100%);
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-estop:active {
+  background: #7f1d1d;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(0, 0, 0, 0.4);
+  transform: translateY(2px);
+}
+
+/* System Halted flashing state */
+.estop-container.halted {
+  background-color: rgba(244, 63, 94, 0.15);
+  border-style: solid;
+  animation: border-flash 1s infinite alternate;
+}
+
+.estop-container.halted .btn-estop {
+  background: #1e293b;
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.estop-container.halted .btn-estop:hover {
+  background: #2d3748;
+}
+
+@keyframes border-flash {
+  from { border-color: rgba(244, 63, 94, 0.3); }
+  to { border-color: rgba(244, 63, 94, 1); box-shadow: 0 0 8px rgba(244, 63, 94, 0.4); }
+}
+
+/* ==========================================================================
+   CENTER PANEL (VISION SYSTEM & CONVEYOR CANVAS)
+   ========================================================================== */
+.center-layout {
+  display: grid;
+  grid-template-rows: 220px 1fr;
+  gap: 12px;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Machine Vision Container */
+.vision-container {
+  background-color: #090c15;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vision-feed-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+video#webcamFeed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* Mirror view for natural interaction */
+}
+
+/* Mock feed fallback view */
+.mock-feed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(0deg, #0d121f, #0d121f 2px, #101627 2px, #101627 4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  transition: opacity 0.5s;
+}
+
+.mock-feed.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mock-feed-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: 40px 40px;
+  background-image: linear-gradient(to right, rgba(30, 41, 59, 0.15) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(30, 41, 59, 0.15) 1px, transparent 1px);
+}
+
+.mock-feed-text {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.mock-feed-text::before {
+  content: 'NO CAMERA DETECTED';
+  color: var(--accent-amber);
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.mock-feed-text .spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent-cyan);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s infinite linear;
+}
+
+/* HIGH-TECH HUD OVERLAY */
+.hud-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+/* Corner Reticles */
+.hud-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--accent-cyan);
+}
+
+.hud-tl { top: 12px; left: 12px; border-right: none; border-bottom: none; }
+.hud-tr { top: 12px; right: 12px; border-left: none; border-bottom: none; }
+.hud-bl { bottom: 12px; left: 12px; border-right: none; border-top: none; }
+.hud-br { bottom: 12px; right: 12px; border-left: none; border-top: none; }
+
+/* Targeting crosshairs */
+.hud-crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 50%;
+}
+
+.hud-crosshair::before, .hud-crosshair::after {
+  content: '';
+  position: absolute;
+  background-color: var(--accent-cyan);
+}
+
+.hud-crosshair::before {
+  top: 50%;
+  left: -10px;
+  width: 60px;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.hud-crosshair::after {
+  left: 50%;
+  top: -10px;
+  height: 60px;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+/* Vertical Laser Scanner Sweep */
+.laser-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(180deg, transparent, var(--accent-green));
+  box-shadow: 0 0 10px var(--accent-green), 0 0 20px var(--accent-green);
+  opacity: 0.8;
+  animation: laser-sweep 4s infinite linear;
+}
+
+@keyframes laser-sweep {
+  0% { top: 0%; }
+  50% { top: 100%; }
+  100% { top: 0%; }
+}
+
+/* HUD Text displays */
+.hud-data-top {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--accent-cyan);
+  text-shadow: 0 0 4px rgba(0, 240, 255, 0.6);
+}
+
+.hud-data-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.vision-detection-box {
+  position: absolute;
+  border: 2px solid var(--accent-cyan);
+  background-color: rgba(0, 240, 255, 0.05);
+  border-radius: 4px;
+  display: none;
+  flex-direction: column;
+  padding: 4px 6px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--accent-cyan);
+  pointer-events: none;
+  z-index: 6;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+  transition: all 0.05s ease-out;
+}
+
+.vision-detection-box.detected-metal {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+  background-color: rgba(244, 63, 94, 0.05);
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.3);
+}
+
+.vision-detection-box.detected-plastic {
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
+  background-color: rgba(245, 158, 11, 0.05);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.vision-detection-box .label {
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+/* Physical Conveyor Canvas Container */
+.canvas-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background-color: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.canvas-wrapper {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  background-color: #080b13;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+canvas#conveyorCanvas {
+  background-color: #0a0d17;
+  display: block;
+}
+
+/* ==========================================================================
+   RIGHT PANEL (DIAGNOSTICS & PLC LOGS)
+   ========================================================================== */
+.chart-container {
+  height: 180px;
+  position: relative;
+  margin-bottom: 20px;
+  background-color: #080b13;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+/* CRT Oscilloscope Screen Grid Overlay */
+.chart-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  background-size: 100% 4px, 6px 100%;
+  opacity: 0.45;
+}
+
+/* Data Logs Section */
+.log-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.log-table-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  background-color: rgba(15, 23, 42, 0.3);
+}
+
+table.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+table.log-table th {
+  background-color: #121824;
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--panel-border);
+  position: sticky;
+  top: 0;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+
+table.log-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--text-primary);
+}
+
+table.log-table tbody tr {
+  transition: background-color 0.15s;
+}
+
+table.log-table tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.4);
+}
+
+/* Routing log styles based on classifications */
+tr.log-row-metal {
+  color: var(--accent-red);
+}
+
+tr.log-row-plastic {
+  color: var(--accent-amber);
+}
+
+.badge-sorting {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.badge-sorting.pass {
+  background-color: rgba(16, 185, 129, 0.15);
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
+}
+
+.badge-sorting.reject {
+  background-color: rgba(244, 63, 94, 0.15);
+  border: 1px solid var(--accent-red);
+  color: var(--accent-red);
+}
+
+/* ==========================================================================
+   UTILITY ANIMATIONS
+   ========================================================================== */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive constraints */
+@media (max-width: 1024px) {
+  body {
+    overflow-y: auto;
+    height: auto;
+  }
+  main {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+  .center-layout {
+    grid-template-rows: 240px 400px;
+  }
+  .chart-container {
+    height: 200px;
+  }
+}
