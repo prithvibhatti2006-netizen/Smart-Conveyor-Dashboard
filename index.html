@@ -3,184 +3,364 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Conveyor Dashboard</title>
+  <title>Smart Conveyor OS</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
     :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
+      --bg-base: #0f172a;
+      --bg-surface: #1e293b;
+      --bg-surface-hover: #334155;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
-      --metal-color: #ef4444; /* Red for metal */
-      --plastic-color: #10b981; /* Green for plastic */
+      --metal: #ef4444; 
+      --plastic: #10b981; 
       --accent: #3b82f6;
+      --border: rgba(255, 255, 255, 0.1);
+      --sidebar-width: 250px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
 
-    body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem; }
+    body { background-color: var(--bg-base); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
 
-    header { text-align: center; margin-bottom: 2rem; }
-    header h1 { font-size: 2.5rem; font-weight: 700; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; color: transparent; }
-    header p { color: var(--text-muted); margin-top: 0.5rem; }
-
-    .status-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.1); color: var(--plastic-color); padding: 6px 12px; border-radius: 999px; font-size: 0.875rem; font-weight: 600; margin-top: 1rem; border: 1px solid rgba(16, 185, 129, 0.2); }
-    .status-dot { width: 8px; height: 8px; background-color: var(--plastic-color); border-radius: 50%; animation: pulse 2s infinite; }
-
-    .dashboard { display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 800px; margin-bottom: 2rem; }
-
-    .card { background-color: var(--card-bg); padding: 2rem; border-radius: 16px; width: 280px; text-align: center; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); transition: transform 0.2s; }
-    .card h2 { color: var(--text-muted); font-size: 1.25rem; font-weight: 500; margin-bottom: 1rem; }
-    .count { font-size: 5rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
-    .count.metal { color: var(--metal-color); }
-    .count.plastic { color: var(--plastic-color); }
-
-    .controls { background-color: var(--card-bg); padding: 1.5rem; border-radius: 12px; width: 100%; max-width: 800px; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; border: 1px dashed rgba(255, 255, 255, 0.1); }
+    /* Layout & Sidebar */
+    .sidebar { width: var(--sidebar-width); background-color: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    .sidebar-header { padding: 2rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .sidebar-header h1 { font-size: 1.5rem; font-weight: 700; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; color: transparent; }
     
-    button { padding: 10px 20px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .btn-metal { background-color: rgba(239, 68, 68, 0.1); color: var(--metal-color); border: 1px solid var(--metal-color); }
-    .btn-metal:hover { background-color: var(--metal-color); color: white; }
-    
-    .btn-plastic { background-color: rgba(16, 185, 129, 0.1); color: var(--plastic-color); border: 1px solid var(--plastic-color); }
-    .btn-plastic:hover { background-color: var(--plastic-color); color: white; }
-    
-    .btn-auto { background-color: var(--accent); color: white; border: 1px solid var(--accent); }
-    .btn-auto:hover { background-color: #2563eb; }
-    .btn-auto.active { background-color: transparent; border-color: var(--metal-color); color: var(--metal-color); }
+    .nav-links { list-style: none; padding: 1rem 0; flex-grow: 1; }
+    .nav-item { padding: 1rem 1.5rem; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-muted); transition: 0.2s; border-left: 3px solid transparent; }
+    .nav-item:hover { background-color: rgba(255,255,255,0.05); color: var(--text-main); }
+    .nav-item.active { background-color: rgba(59, 130, 246, 0.1); color: var(--accent); border-left-color: var(--accent); }
 
-    .activity-log { margin-top: 2rem; width: 100%; max-width: 800px; background-color: var(--card-bg); border-radius: 12px; padding: 1.5rem; }
-    .activity-log h3 { color: var(--text-muted); margin-bottom: 1rem; font-size: 1.1rem; }
-    .log-list { list-style: none; max-height: 200px; overflow-y: auto; padding-right: 10px; }
-    .log-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-family: monospace; animation: slideIn 0.3s ease-out; }
-    .log-item:first-child { color: white; font-weight: bold; }
+    .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; background-color: var(--bg-base); }
+    .topbar { height: 70px; background-color: var(--bg-surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
     
-    /* Scrollbar styling */
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    .view-section { display: none; padding: 2rem; animation: fadeIn 0.3s ease-out; }
+    .view-section.active { display: block; }
 
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
-    @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    /* Dashboard Widgets */
+    .widget-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .widget { background: var(--bg-surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); }
+    .widget-title { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+    .widget-value { font-size: 2.5rem; font-weight: 700; }
+    .text-metal { color: var(--metal); }
+    .text-plastic { color: var(--plastic); }
+
+    /* Live Conveyor Simulation */
+    .sim-container { background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border); padding: 2rem; position: relative; height: 350px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+    .belt { height: 20px; background: repeating-linear-gradient(90deg, #334155, #334155 20px, #475569 20px, #475569 40px); width: 100%; border-radius: 4px; position: absolute; top: 50%; animation: beltMove 2s linear infinite; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+    .sensor-gate { position: absolute; top: 20%; left: 50%; height: 60%; width: 60px; border: 2px dashed var(--accent); border-radius: 8px; background: rgba(59, 130, 246, 0.1); display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; color: var(--accent); font-weight: bold; }
+    
+    .item { position: absolute; top: 43%; width: 40px; height: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.1s linear; z-index: 10; display: flex; justify-content: center; align-items: center; font-size: 1.2rem;}
+    .item.metal { background: linear-gradient(135deg, #ef4444, #991b1b); }
+    .item.plastic { background: linear-gradient(135deg, #10b981, #047857); border-radius: 50%; }
+
+    /* Sorting Bins */
+    .bins-container { position: absolute; bottom: 10%; right: 5%; display: flex; gap: 20px; }
+    .bin { width: 100px; height: 60px; border-radius: 8px; border: 2px solid; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 5px; font-weight: bold; }
+    .bin-metal { border-color: var(--metal); background: rgba(239, 68, 68, 0.1); color: var(--metal); }
+    .bin-plastic { border-color: var(--plastic); background: rgba(16, 185, 129, 0.1); color: var(--plastic); }
+
+    /* Controls */
+    .controls-bar { margin-top: 1.5rem; display: flex; gap: 1rem; }
+    button { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-danger { background: rgba(239, 68, 68, 0.2); color: var(--metal); border: 1px solid var(--metal); }
+    .btn-danger:hover { background: var(--metal); color: white; }
+
+    /* Data Table */
+    .table-container { background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { background: rgba(255,255,255,0.02); padding: 1rem; color: var(--text-muted); cursor: pointer; user-select: none; border-bottom: 1px solid var(--border); }
+    th:hover { background: rgba(255,255,255,0.05); }
+    td { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.02); }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+    .badge.metal { background: rgba(239, 68, 68, 0.2); color: var(--metal); }
+    .badge.plastic { background: rgba(16, 185, 129, 0.2); color: var(--plastic); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes beltMove { from { background-position: 0 0; } to { background-position: -40px 0; } }
+    @keyframes dropInBin { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.5) translateY(50px); opacity: 0; } }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>Smart Conveyor System</h1>
-    <p>Live Sorting & Diagnostics Dashboard</p>
-    <div class="status-badge">
-      <div class="status-dot"></div>
-      System Online (Simulation Mode)
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <h1>Conveyor OS</h1>
     </div>
-  </header>
+    <ul class="nav-links">
+      <li class="nav-item active" data-target="dashboard"><i class="fas fa-chart-line"></i> Dashboard</li>
+      <li class="nav-item" data-target="visualizer"><i class="fas fa-cogs"></i> Live Visualizer</li>
+      <li class="nav-item" data-target="datalogs"><i class="fas fa-database"></i> Data Logs</li>
+    </ul>
+  </nav>
 
-  <main>
-    <div class="dashboard">
-      <div class="card">
-        <h2>Total Metal Detected</h2>
-        <div class="count metal" id="metalDisplay">0</div>
+  <main class="main-content">
+    <header class="topbar">
+      <div id="systemStatus" style="color: var(--plastic); font-weight: 600;"><i class="fas fa-check-circle"></i> System Online</div>
+      <button class="btn-primary" id="autoSimBtn" onclick="toggleSim()"><i class="fas fa-play"></i> Start Auto-Run</button>
+    </header>
+
+    <section class="view-section active" id="dashboard">
+      <h2 style="margin-bottom: 1.5rem;">System Overview</h2>
+      <div class="widget-grid">
+        <div class="widget">
+          <div class="widget-title">Total Processed</div>
+          <div class="widget-value" id="dashTotal">0</div>
+        </div>
+        <div class="widget">
+          <div class="widget-title">Metal Yield</div>
+          <div class="widget-value text-metal" id="dashMetal">0</div>
+        </div>
+        <div class="widget">
+          <div class="widget-title">Plastic Yield</div>
+          <div class="widget-value text-plastic" id="dashPlastic">0</div>
+        </div>
+        <div class="widget">
+          <div class="widget-title">Efficiency Rate</div>
+          <div class="widget-value" id="dashEff" style="color: var(--accent)">100%</div>
+        </div>
       </div>
-      <div class="card">
-        <h2>Total Plastic Detected</h2>
-        <div class="count plastic" id="plasticDisplay">0</div>
+    </section>
+
+    <section class="view-section" id="visualizer">
+      <h2 style="margin-bottom: 1.5rem;">Real-time Sorting Simulation</h2>
+      <div class="sim-container" id="simArea">
+        <div class="belt"></div>
+        <div class="sensor-gate">Sensor</div>
+        <div class="bins-container">
+          <div class="bin bin-metal">METAL</div>
+          <div class="bin bin-plastic">PLASTIC</div>
+        </div>
       </div>
-    </div>
+      <div class="controls-bar">
+        <button class="btn-primary" style="background: var(--metal);" onclick="spawnItem('metal')">Spawn Metal</button>
+        <button class="btn-primary" style="background: var(--plastic);" onclick="spawnItem('plastic')">Spawn Plastic</button>
+        <button class="btn-danger" onclick="clearBelt()">Emergency Stop</button>
+      </div>
+    </section>
 
-    <div class="controls">
-      <button class="btn-metal" onclick="triggerDetection('metal')">Trigger Metal Sensor</button>
-      <button class="btn-plastic" onclick="triggerDetection('plastic')">Trigger Ultrasonic Sensor</button>
-      <button class="btn-auto" id="autoBtn" onclick="toggleAutoSim()">Start Auto-Simulation</button>
-    </div>
+    <section class="view-section" id="datalogs">
+      <h2 style="margin-bottom: 1.5rem;">Sensor History</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortLogs('id')">ID <i class="fas fa-sort"></i></th>
+              <th onclick="sortLogs('time')">Timestamp <i class="fas fa-sort"></i></th>
+              <th onclick="sortLogs('type')">Material Type <i class="fas fa-sort"></i></th>
+              <th onclick="sortLogs('status')">Routing Status <i class="fas fa-sort"></i></th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody">
+            </tbody>
+        </table>
+      </div>
+    </section>
 
-    <div class="activity-log">
-      <h3>Live Sensor Activity Log</h3>
-      <ul class="log-list" id="logList">
-        <li class="log-item" style="color: var(--text-muted)">Waiting for sensor input...</li>
-      </ul>
-    </div>
   </main>
 
   <script>
-    // System State
-    let state = { metal: 0, plastic: 0 };
-    let autoSimInterval = null;
+    /* =========================================
+       1. STATE MANAGEMENT & DATA
+    ========================================= */
+    const state = {
+      metal: 0,
+      plastic: 0,
+      total: 0,
+      isRunning: false,
+      simInterval: null,
+      logs: [],
+      currentSortConfig: { key: 'id', direction: -1 } // -1 for descending
+    };
 
-    // DOM Elements
-    const elMetal = document.getElementById('metalDisplay');
-    const elPlastic = document.getElementById('plasticDisplay');
-    const elLog = document.getElementById('logList');
-    const btnAuto = document.getElementById('autoBtn');
+    let nextId = 1;
+    let itemsOnBelt = []; // Tracks DOM elements moving on the belt
 
-    // Function to handle a detection event
-    function triggerDetection(type) {
-      // Update state
-      state[type]++;
-      
-      // Update UI
-      const displayEl = type === 'metal' ? elMetal : elPlastic;
-      displayEl.textContent = state[type];
-      
-      // Add a quick "pop" animation to the number
-      displayEl.style.animation = 'none';
-      displayEl.offsetHeight; // trigger reflow
-      displayEl.style.animation = 'pop 0.3s ease-out';
+    /* =========================================
+       2. ROUTING (SPA LOGIC)
+    ========================================= */
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        // Update Nav UI
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        item.classList.add('active');
 
-      // Log the event
-      addLogEntry(type);
-    }
+        // Switch Sections
+        const targetId = item.getAttribute('data-target');
+        document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+        document.getElementById(targetId).classList.add('active');
+      });
+    });
 
-    // Function to add a visual log entry
-    function addLogEntry(type) {
-      const now = new Date();
-      const timeString = now.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit', fractionalSecondDigits: 2 });
-      
-      const li = document.createElement('li');
-      li.className = 'log-item';
-      
-      const itemSpan = document.createElement('span');
-      itemSpan.textContent = type === 'metal' ? '⚙️ Inductive Prox: METAL' : '♻️ Ultrasonic Echo: PLASTIC';
-      itemSpan.style.color = type === 'metal' ? 'var(--metal-color)' : 'var(--plastic-color)';
-      
-      const timeSpan = document.createElement('span');
-      timeSpan.textContent = `[${timeString}]`;
-      timeSpan.style.color = 'var(--text-muted)';
-
-      li.appendChild(itemSpan);
-      li.appendChild(timeSpan);
-
-      // Remove the "Waiting..." placeholder if it exists
-      if (elLog.children.length === 1 && elLog.children[0].textContent.includes("Waiting")) {
-        elLog.innerHTML = '';
-      }
-
-      elLog.insertBefore(li, elLog.firstChild);
-
-      // Keep log short to prevent memory bloat
-      if (elLog.children.length > 50) {
-        elLog.removeChild(elLog.lastChild);
-      }
-    }
-
-    // Function to toggle automatic random simulation
-    function toggleAutoSim() {
-      if (autoSimInterval) {
-        // Stop Simulation
-        clearInterval(autoSimInterval);
-        autoSimInterval = null;
-        btnAuto.textContent = "Start Auto-Simulation";
-        btnAuto.classList.remove("active");
+    /* =========================================
+       3. SIMULATION ENGINE
+    ========================================= */
+    function toggleSim() {
+      const btn = document.getElementById('autoSimBtn');
+      if (state.isRunning) {
+        clearInterval(state.simInterval);
+        state.isRunning = false;
+        btn.innerHTML = '<i class="fas fa-play"></i> Start Auto-Run';
+        btn.classList.remove('btn-danger');
       } else {
-        // Start Simulation
-        btnAuto.textContent = "Stop Auto-Simulation";
-        btnAuto.classList.add("active");
+        state.isRunning = true;
+        btn.innerHTML = '<i class="fas fa-pause"></i> Pause System';
+        btn.classList.add('btn-danger');
         
-        autoSimInterval = setInterval(() => {
-          // Randomly pick metal (30% chance) or plastic (70% chance)
-          const isMetal = Math.random() > 0.7; 
-          triggerDetection(isMetal ? 'metal' : 'plastic');
-        }, 2500); // Triggers every 2.5 seconds
+        // Spawn an item randomly every 1.5 to 3 seconds
+        state.simInterval = setInterval(() => {
+          const type = Math.random() > 0.6 ? 'metal' : 'plastic';
+          spawnItem(type);
+        }, Math.random() * 1500 + 1500);
       }
     }
+
+    function spawnItem(type) {
+      const simArea = document.getElementById('simArea');
+      const itemEl = document.createElement('div');
+      
+      itemEl.className = `item ${type}`;
+      itemEl.innerHTML = type === 'metal' ? '<i class="fas fa-cube"></i>' : '<i class="fas fa-circle"></i>';
+      itemEl.style.left = '-50px'; // Start off-screen
+      
+      simArea.appendChild(itemEl);
+
+      // Animation Engine Tracking
+      itemsOnBelt.push({
+        element: itemEl,
+        xPos: -50,
+        type: type,
+        scanned: false
+      });
+    }
+
+    // Main Game/Animation Loop
+    function animateBelt() {
+      const beltSpeed = 3;
+      const simAreaWidth = document.getElementById('simArea').offsetWidth;
+      const sensorX = simAreaWidth * 0.5; // Sensor is at 50%
+      const dropZoneX = simAreaWidth - 150; 
+
+      for (let i = itemsOnBelt.length - 1; i >= 0; i--) {
+        let item = itemsOnBelt[i];
+        item.xPos += beltSpeed;
+        item.element.style.transform = `translateX(${item.xPos}px)`;
+
+        // Sensor Detection
+        if (!item.scanned && item.xPos > sensorX) {
+          item.scanned = true;
+          logDetection(item.type);
+          
+          // Flash sensor gate
+          const gate = document.querySelector('.sensor-gate');
+          gate.style.backgroundColor = item.type === 'metal' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)';
+          setTimeout(() => gate.style.backgroundColor = 'rgba(59, 130, 246, 0.1)', 300);
+        }
+
+        // Sorting / Dropping off the end
+        if (item.xPos > dropZoneX) {
+          item.element.style.animation = 'dropInBin 0.5s forwards';
+          itemsOnBelt.splice(i, 1); // Remove from tracking array
+          
+          // Clean up DOM after animation
+          setTimeout(() => {
+            if(item.element.parentNode) item.element.parentNode.removeChild(item.element);
+          }, 500);
+        }
+      }
+      requestAnimationFrame(animateBelt);
+    }
+    requestAnimationFrame(animateBelt); // Start animation loop
+
+    function clearBelt() {
+      itemsOnBelt.forEach(item => {
+        if(item.element.parentNode) item.element.parentNode.removeChild(item.element);
+      });
+      itemsOnBelt = [];
+    }
+
+    /* =========================================
+       4. DATA & DASHBOARD UPDATES
+    ========================================= */
+    function logDetection(type) {
+      state[type]++;
+      state.total++;
+      
+      // Update Dashboard
+      document.getElementById('dashTotal').innerText = state.total;
+      document.getElementById('dashMetal').innerText = state.metal;
+      document.getElementById('dashPlastic').innerText = state.plastic;
+      
+      // Calculate fake efficiency (just for dashboard visual)
+      const eff = Math.max(90, 100 - (state.total % 5));
+      document.getElementById('dashEff').innerText = eff + "%";
+
+      // Add to Log Array
+      const newLog = {
+        id: nextId++,
+        time: new Date(),
+        type: type,
+        status: type === 'metal' ? 'Routed to Bin A' : 'Routed to Bin B'
+      };
+      
+      state.logs.push(newLog);
+      renderTable();
+    }
+
+    /* =========================================
+       5. DATA TABLE & SORTING
+    ========================================= */
+    function sortLogs(key) {
+      // Toggle direction if clicking the same column
+      if (state.currentSortConfig.key === key) {
+        state.currentSortConfig.direction *= -1;
+      } else {
+        state.currentSortConfig.key = key;
+        state.currentSortConfig.direction = 1;
+      }
+
+      state.logs.sort((a, b) => {
+        let valA = a[key];
+        let valB = b[key];
+        
+        if (valA < valB) return -1 * state.currentSortConfig.direction;
+        if (valA > valB) return 1 * state.currentSortConfig.direction;
+        return 0;
+      });
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('logTableBody');
+      tbody.innerHTML = ''; // Clear current table
+
+      // Render only last 50 to prevent DOM lag
+      const displayLogs = state.logs.slice(-50);
+
+      displayLogs.forEach(log => {
+        const tr = document.createElement('tr');
+        
+        const timeString = log.time.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' });
+        const typeBadge = `<span class="badge ${log.type}">${log.type.toUpperCase()}</span>`;
+
+        tr.innerHTML = `
+          <td>#${log.id.toString().padStart(4, '0')}</td>
+          <td style="color: var(--text-muted)">${timeString}</td>
+          <td>${typeBadge}</td>
+          <td><i class="fas fa-check" style="color: var(--plastic); margin-right: 5px;"></i> ${log.status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Initialize an empty table on load
+    renderTable();
   </script>
 </body>
 </html>
